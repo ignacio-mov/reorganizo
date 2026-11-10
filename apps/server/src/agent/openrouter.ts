@@ -1,12 +1,11 @@
 import { config } from "../config.js";
 import {
-  isRetryableStatus,
   LlmError,
-  normalizeToolCalls,
   withRetries,
   type ChatMessage,
   type ModelReply,
 } from "./llm.js";
+import { parseChatCompletionsResponse } from "./chatCompletions.js";
 
 /**
  * Hardened OpenRouter client.
@@ -23,13 +22,7 @@ const REQUEST_TIMEOUT_MS = 90_000;
 /** Cap per reply. Tool-call arguments are small; long prose is not wanted here. */
 const MAX_TOKENS = 4_000;
 
-interface ApiError {
-  code?: number | string;
-  message?: string;
-  metadata?: Record<string, unknown>;
-}
-
-function hintFor(status: number | undefined, message: string): string {
+function hintFor(status: number | undefined, model: string, message: string): string {
   switch (status) {
     case 401:
       return "La API key de OpenRouter no es válida o fue revocada. Revisala en la configuración web.";
@@ -38,7 +31,7 @@ function hintFor(status: number | undefined, message: string): string {
     case 403:
       return "OpenRouter rechazó el pedido (moderación o permisos del modelo).";
     case 404:
-      return `El modelo "${config.OPENROUTER_MODEL}" no existe o ya no está disponible. Cambialo en la configuración web.`;
+      return `El modelo "${model}" no existe o ya no está disponible. Cambialo en la configuración web.`;
     case 429:
       return "OpenRouter está limitando los pedidos (rate limit). Probá de nuevo en un minuto.";
     case 408:
@@ -47,19 +40,6 @@ function hintFor(status: number | undefined, message: string): string {
       if (status && status >= 500) return "OpenRouter o el proveedor del modelo están caídos ahora mismo.";
       return message;
   }
-}
-
-/** Some providers return content as an array of parts instead of a string. */
-function normalizeContent(content: unknown): string | null {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    const text = content
-      .map((part) => (typeof part === "string" ? part : (part as { text?: string })?.text ?? ""))
-      .join("")
-      .trim();
-    return text || null;
-  }
-  return null;
 }
 
 /**
@@ -179,76 +159,7 @@ export async function singleCall(
     clearTimeout(timer);
   }
 
-  const retryAfterHeader = Number(res.headers.get("Retry-After"));
-  const retryAfter = Number.isFinite(retryAfterHeader) && retryAfterHeader > 0 ? retryAfterHeader : undefined;
-  const bodyText = await res.text();
-  let body: {
-    choices?: { message?: Record<string, unknown>; finish_reason?: string }[];
-    error?: ApiError;
-    provider?: string;
-    usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number };
-  };
-  try {
-    body = JSON.parse(bodyText) as typeof body;
-  } catch {
-    throw new LlmError(
-      `non-JSON response (${res.status}): ${bodyText.slice(0, 200)}`,
-      "OpenRouter devolvió una respuesta que no entiendo.",
-      isRetryableStatus(res.status),
-      res.status,
-      retryAfter,
-    );
-  }
-
-  // An `error` object can arrive with HTTP 200 when generation fails halfway.
-  const apiError = body.error;
-  if (!res.ok || apiError) {
-    const status = res.ok ? Number(apiError?.code) || res.status : res.status;
-    const message = apiError?.message ?? bodyText.slice(0, 300);
-    throw new LlmError(
-      `OpenRouter ${status}: ${message}`,
-      hintFor(status, message),
-      isRetryableStatus(status),
-      status,
-      retryAfter,
-    );
-  }
-
-  const choice = body.choices?.[0];
-  const raw = choice?.message;
-  if (!raw) {
-    throw new LlmError(
-      `empty response: ${bodyText.slice(0, 200)}`,
-      "El modelo devolvió una respuesta vacía.",
-      true,
-    );
-  }
-
-  const toolCalls = normalizeToolCalls(
-    Array.isArray(raw.tool_calls)
-      ? raw.tool_calls.map((c: { id?: string; function?: { name?: string; arguments?: unknown } }) => ({
-          id: c?.id,
-          name: c?.function?.name,
-          arguments: c?.function?.arguments,
-        }))
-      : [],
-  );
-  return {
-    message: {
-      role: "assistant",
-      content: normalizeContent(raw.content),
-      ...(toolCalls ? { tool_calls: toolCalls } : {}),
-    },
-    finishReason: choice?.finish_reason ?? null,
-    provider: body.provider,
-    usage: body.usage
-      ? {
-          prompt: body.usage.prompt_tokens ?? 0,
-          completion: body.usage.completion_tokens ?? 0,
-          cost: body.usage.cost,
-        }
-      : undefined,
-  };
+  return parseChatCompletionsResponse(res, "OpenRouter", model, hintFor);
 }
 
 /** One model turn, with a relaxed second chance when the routing floor matches nothing. */

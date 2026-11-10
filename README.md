@@ -158,10 +158,10 @@ changes, follow the instructions on their site.
    > answering `invalid_grant` for both Calendar and Tasks. Adding yourself as a test user does
    > not avoid this.
 
-### 3. The LLM: OpenAI or OpenRouter
+### 3. The LLM: OpenAI, OpenRouter or LiteLLM
 
-Pick one with `LLM_PROVIDER` (`openrouter` by default, or `openai`). Only the active provider's
-key is required.
+Pick one with `LLM_PROVIDER` (`openrouter` by default). Only the active provider's key is
+required.
 
 **OpenAI**
 
@@ -179,6 +179,17 @@ key is required.
    `deepseek/deepseek-v4-flash-0731`, but **any model available on OpenRouter works**: just
    change `OPENROUTER_MODEL` (or pick it in the settings UI). The model needs to support
    tool-calling.
+
+**LiteLLM**
+
+1. Run a LiteLLM proxy configured with at least one model alias that supports tool calling.
+2. Set `LLM_PROVIDER=litellm`, `LITELLM_API_KEY` to the proxy key,
+   `LITELLM_BASE_URL` to the OpenAI-compatible base URL (default `http://localhost:4000/v1`),
+   and `LITELLM_MODEL` to the alias configured in the proxy. The optional
+   `LITELLM_MODEL_STRONG` alias is used when the agent escalates.
+3. If Reorganizo runs in Docker, `localhost` refers to its own container. Set the base URL to the
+   LiteLLM service's reachable hostname instead, such as `http://litellm:4000/v1`.
+   Requests use the proxy's Chat Completions API and send the usual `Authorization: Bearer` key.
 
 ## Configuration
 
@@ -200,10 +211,13 @@ themselves live*, and `PORT`, which has to match the port your container or PaaS
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Token from @BotFather |
 | `TELEGRAM_ALLOWED_USER_ID` | Your numeric user ID — the bot ignores everyone else |
-| `LLM_PROVIDER` | `openrouter` (default) or `openai` |
+| `LLM_PROVIDER` | `openrouter` (default), `openai` or `litellm` |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | OpenAI key and model (default `gpt-6-luna`) |
 | `OPENAI_MODEL_STRONG` | Same as `OPENROUTER_MODEL_STRONG`, for OpenAI (e.g. `gpt-6.1-sol`; empty = never) |
 | `OPENAI_REASONING_EFFORT` | Base model's reasoning: `none` (default), `low`, `medium`, `high`. `gpt-6.1-sol` and `gpt-6-astra` need `low` or above. The backup model always runs at `low` |
+| `LITELLM_API_KEY` | LiteLLM proxy key |
+| `LITELLM_BASE_URL` | OpenAI-compatible LiteLLM base URL (default `http://localhost:4000/v1`) |
+| `LITELLM_MODEL` / `LITELLM_MODEL_STRONG` | Base and optional backup model aliases configured in LiteLLM (default base `gpt-4o-mini`) |
 | `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` | LLM (default `deepseek/deepseek-v4-flash-0731`) |
 | `OPENROUTER_MODEL_STRONG` | Better model the agent escalates to when the cheap one gets a turn wrong (empty = never) |
 | `OPENROUTER_QUALITY_FLOOR` | Lowest endpoint quantization: `any`, `6bit`, `8bit` (default), `16bit` |

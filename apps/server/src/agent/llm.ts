@@ -1,6 +1,7 @@
 import { config } from "../config.js";
 import * as openai from "./openai.js";
 import * as openrouter from "./openrouter.js";
+import * as litellm from "./litellm.js";
 
 /**
  * Provider-agnostic model layer. The agent speaks the Chat Completions message
@@ -125,21 +126,31 @@ export async function withRetries(model: string, call: () => Promise<ModelReply>
   throw last ?? new LlmError("unknown failure", "Fallo desconocido llamando al modelo.", false);
 }
 
-const provider = () => (config.LLM_PROVIDER === "openai" ? openai : openrouter);
+const provider = () => {
+  if (config.LLM_PROVIDER === "openai") return openai;
+  if (config.LLM_PROVIDER === "litellm") return litellm;
+  return openrouter;
+};
 
 /** Human name of the active provider, for /diag. */
 export function providerName(): string {
-  return config.LLM_PROVIDER === "openai" ? "OpenAI" : "OpenRouter";
+  if (config.LLM_PROVIDER === "openai") return "OpenAI";
+  if (config.LLM_PROVIDER === "litellm") return "LiteLLM";
+  return "OpenRouter";
 }
 
 /** The everyday model of the active provider. */
 export function baseModel(): string {
-  return config.LLM_PROVIDER === "openai" ? config.OPENAI_MODEL : config.OPENROUTER_MODEL;
+  if (config.LLM_PROVIDER === "openai") return config.OPENAI_MODEL;
+  if (config.LLM_PROVIDER === "litellm") return config.LITELLM_MODEL;
+  return config.OPENROUTER_MODEL;
 }
 
 /** Reinforcement model of the active provider; empty = never escalate. */
 export function strongModel(): string {
-  return config.LLM_PROVIDER === "openai" ? config.OPENAI_MODEL_STRONG : config.OPENROUTER_MODEL_STRONG;
+  if (config.LLM_PROVIDER === "openai") return config.OPENAI_MODEL_STRONG;
+  if (config.LLM_PROVIDER === "litellm") return config.LITELLM_MODEL_STRONG;
+  return config.OPENROUTER_MODEL_STRONG;
 }
 
 /**
@@ -173,7 +184,7 @@ const PROBE_TOOLS = [
     type: "function",
     function: {
       name: "ping",
-      description: "Connectivity probe. Never needs to be called.",
+      description: "Connectivity check. Call this tool exactly once with an empty object.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -183,7 +194,18 @@ const PROBE_TOOLS = [
 export async function checkModel(model: string = baseModel()): Promise<DiagnosticsResult> {
   const started = Date.now();
   try {
-    const reply = await provider().singleCall([{ role: "user", content: "Reply with: ok" }], PROBE_TOOLS, model);
+    const reply = await provider().singleCall(
+      [{ role: "user", content: "Call the ping tool exactly once with an empty object. Do not reply with text." }],
+      PROBE_TOOLS,
+      model,
+    );
+    if (!reply.message.tool_calls?.some((call) => call.function.name === "ping")) {
+      throw new LlmError(
+        "model did not call the diagnostic tool",
+        "El modelo respondió, pero no pudo usar herramientas. Elegí otro modelo compatible con tool-calling.",
+        false,
+      );
+    }
     return {
       ok: true,
       model,

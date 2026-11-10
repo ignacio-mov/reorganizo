@@ -27,7 +27,7 @@ export const settingsSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(10),
   TELEGRAM_ALLOWED_USER_ID: z.coerce.number().int().positive(),
   // Which API the agent talks to. Only the active provider's key is required.
-  LLM_PROVIDER: z.enum(["openrouter", "openai"]).default("openrouter"),
+  LLM_PROVIDER: z.enum(["openrouter", "openai", "litellm"]).default("openrouter"),
   OPENAI_API_KEY: z.string().min(10).or(z.literal("")).default(""),
   OPENAI_MODEL: z.string().default("gpt-6-luna"),
   // Same role as OPENROUTER_MODEL_STRONG. Empty = never escalate.
@@ -36,6 +36,10 @@ export const settingsSchema = z.object({
   // and the only one that still allows a temperature; GPT-6.1 Sol and GPT-6
   // Astra reject it, so pick "low" or above if one of those is the base model.
   OPENAI_REASONING_EFFORT: z.enum(["none", "low", "medium", "high"]).default("none"),
+  LITELLM_API_KEY: z.string().min(10).or(z.literal("")).default(""),
+  LITELLM_BASE_URL: z.string().url().default("http://localhost:4000/v1"),
+  LITELLM_MODEL: z.string().default("gpt-4o-mini"),
+  LITELLM_MODEL_STRONG: z.string().default(""),
   OPENROUTER_API_KEY: z.string().min(10).or(z.literal("")).default(""),
   OPENROUTER_MODEL: z.string().default("deepseek/deepseek-v4-flash-0731"),
   // Stronger model the agent switches to mid-turn when the cheap one visibly
@@ -88,11 +92,15 @@ export type SettingKey = keyof Settings;
 export const looseSettingsSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().default("").catch(""),
   TELEGRAM_ALLOWED_USER_ID: z.coerce.number().int().positive().default(0).catch(0),
-  LLM_PROVIDER: z.enum(["openrouter", "openai"]).default("openrouter").catch("openrouter"),
+  LLM_PROVIDER: z.enum(["openrouter", "openai", "litellm"]).default("openrouter").catch("openrouter"),
   OPENAI_API_KEY: z.string().default("").catch(""),
   OPENAI_MODEL: z.string().default("gpt-6-luna").catch("gpt-6-luna"),
   OPENAI_MODEL_STRONG: z.string().default("").catch(""),
   OPENAI_REASONING_EFFORT: z.enum(["none", "low", "medium", "high"]).default("none").catch("none"),
+  LITELLM_API_KEY: z.string().default("").catch(""),
+  LITELLM_BASE_URL: z.string().url().default("http://localhost:4000/v1").catch("http://localhost:4000/v1"),
+  LITELLM_MODEL: z.string().default("gpt-4o-mini").catch("gpt-4o-mini"),
+  LITELLM_MODEL_STRONG: z.string().default("").catch(""),
   OPENROUTER_API_KEY: z.string().default("").catch(""),
   OPENROUTER_MODEL: z
     .string()
@@ -151,6 +159,7 @@ export const SETTING_KEYS = Object.keys(settingsSchema.shape) as SettingKey[];
 export const SECRET_KEYS = [
   "TELEGRAM_BOT_TOKEN",
   "OPENAI_API_KEY",
+  "LITELLM_API_KEY",
   "OPENROUTER_API_KEY",
   "GOOGLE_CLIENT_SECRET",
   "WEB_PASSWORD",
@@ -166,9 +175,13 @@ export const ENV_ONLY_KEYS = ["DATABASE_PATH", "PORT"] as const;
 /** Managed by the app, never shown nor editable in the UI. */
 export const HIDDEN_KEYS = ["WEB_SESSION_SECRET"] as const;
 
-/** The API key the given provider needs; the other provider's key is optional. */
-export function apiKeyFor(provider: "openrouter" | "openai"): "OPENAI_API_KEY" | "OPENROUTER_API_KEY" {
-  return provider === "openai" ? "OPENAI_API_KEY" : "OPENROUTER_API_KEY";
+/** The API key the given provider needs; the other providers' keys are optional. */
+export function apiKeyFor(
+  provider: Settings["LLM_PROVIDER"],
+): "OPENAI_API_KEY" | "OPENROUTER_API_KEY" | "LITELLM_API_KEY" {
+  if (provider === "openai") return "OPENAI_API_KEY";
+  if (provider === "litellm") return "LITELLM_API_KEY";
+  return "OPENROUTER_API_KEY";
 }
 
 /**
@@ -198,6 +211,7 @@ export const EMPTY_ALLOWED_KEYS = [
   // Empty is a real choice here: no reinforcement model (either provider), no
   // price ceiling, and "let OpenRouter pick the provider" respectively.
   "OPENAI_MODEL_STRONG",
+  "LITELLM_MODEL_STRONG",
   "OPENROUTER_MODEL_STRONG",
   "OPENROUTER_MAX_PRICE",
   "OPENROUTER_PROVIDER_ORDER",
@@ -221,6 +235,10 @@ export const SETTINGS_META: Record<Exclude<SettingKey, "WEB_SESSION_SECRET">, Se
   OPENAI_MODEL: { group: "model", secret: false, envOnly: false },
   OPENAI_MODEL_STRONG: { group: "model", secret: false, envOnly: false },
   OPENAI_REASONING_EFFORT: { group: "model", secret: false, envOnly: false },
+  LITELLM_API_KEY: { group: "model", secret: true, envOnly: false },
+  LITELLM_BASE_URL: { group: "model", secret: false, envOnly: false },
+  LITELLM_MODEL: { group: "model", secret: false, envOnly: false },
+  LITELLM_MODEL_STRONG: { group: "model", secret: false, envOnly: false },
   OPENROUTER_API_KEY: { group: "model", secret: true, envOnly: false },
   OPENROUTER_MODEL: { group: "model", secret: false, envOnly: false },
   OPENROUTER_MODEL_STRONG: { group: "model", secret: false, envOnly: false },

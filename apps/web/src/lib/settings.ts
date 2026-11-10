@@ -187,16 +187,19 @@ export interface SettingsFieldDef {
   provider?: LlmProvider;
 }
 
-export type LlmProvider = "openrouter" | "openai";
+export type LlmProvider = "openrouter" | "openai" | "litellm";
 
 /** The provider the form currently points at (saved or just picked). */
 export function activeProvider(value: string | undefined): LlmProvider {
-  return value === "openai" ? "openai" : "openrouter";
+  if (value === "openai" || value === "litellm") return value;
+  return "openrouter";
 }
 
-/** Of the two API keys, only the active provider's one is required. */
+/** Only the active provider's API key is required. */
 export function apiKeyFor(provider: LlmProvider): string {
-  return provider === "openai" ? "OPENAI_API_KEY" : "OPENROUTER_API_KEY";
+  if (provider === "openai") return "OPENAI_API_KEY";
+  if (provider === "litellm") return "LITELLM_API_KEY";
+  return "OPENROUTER_API_KEY";
 }
 
 export const GROUP_ORDER: SettingsGroupKey[] = [
@@ -237,7 +240,7 @@ export const SETTINGS_FIELDS: SettingsFieldDef[] = [
   { key: "TELEGRAM_BOT_TOKEN", group: "telegram" },
   { key: "TELEGRAM_ALLOWED_USER_ID", group: "telegram" },
   { key: "CALLMEBOT_USER", group: "telegram", placeholder: "@usuario" },
-  { key: "LLM_PROVIDER", group: "model", kind: "select", options: ["openrouter", "openai"] },
+  { key: "LLM_PROVIDER", group: "model", kind: "select", options: ["openrouter", "openai", "litellm"] },
   { key: "OPENAI_API_KEY", group: "model", provider: "openai" },
   {
     key: "OPENAI_MODEL",
@@ -261,6 +264,10 @@ export const SETTINGS_FIELDS: SettingsFieldDef[] = [
     kind: "select",
     options: ["none", "low", "medium", "high"],
   },
+  { key: "LITELLM_API_KEY", group: "model", provider: "litellm" },
+  { key: "LITELLM_BASE_URL", group: "model", provider: "litellm", placeholder: "http://localhost:4000/v1" },
+  { key: "LITELLM_MODEL", group: "model", provider: "litellm", placeholder: "gpt-4o-mini" },
+  { key: "LITELLM_MODEL_STRONG", group: "model", provider: "litellm", placeholder: "optional model alias" },
   { key: "OPENROUTER_API_KEY", group: "model", provider: "openrouter" },
   { key: "OPENROUTER_MODEL", group: "model", provider: "openrouter" },
   { key: "OPENROUTER_MODEL_STRONG", group: "model", provider: "openrouter", placeholder: "anthropic/claude-sonnet-5" },
@@ -332,7 +339,7 @@ const HELP_ES: Partial<Record<SettingsGroupKey, HelpDoc>> = {
   model: {
     steps: [
       {
-        text: "Elegí el proveedor. OpenAI usa tu cuenta de platform.openai.com directo; OpenRouter da acceso a cientos de modelos de otros proveedores con una sola key. Solo se muestran los campos del que elijas.",
+        text: "Elegí el proveedor. OpenAI usa tu cuenta de platform.openai.com directo; OpenRouter da acceso a cientos de modelos con una sola key; LiteLLM conecta con tu proxy compatible con OpenAI. Solo se muestran los campos del que elijas.",
       },
       {
         text: "OpenAI: entrá a platform.openai.com/api-keys, creá una key y copiala (se ve una sola vez). La cuenta necesita saldo cargado en Billing.",
@@ -358,6 +365,11 @@ const HELP_ES: Partial<Record<SettingsGroupKey, HelpDoc>> = {
       {
         text: "OpenRouter: el orden de providers es una lista separada por comas con los proveedores que preferís. Si ninguno responde, entra el criterio de fallback: price busca el más barato, throughput el más rápido y latency el que menos tarda en arrancar.",
         links: [{ label: "Routing de providers", url: "https://openrouter.ai/docs/features/provider-routing" }],
+      },
+      {
+        text: "LiteLLM: configurá la URL base de tu proxy (incluido /v1), su master key y el alias de modelo que declaraste en LiteLLM. Si Reorganizo corre en Docker, localhost apunta al contenedor de Reorganizo: usá el nombre del servicio de LiteLLM.",
+        code: "http://litellm:4000/v1",
+        links: [{ label: "Documentación del proxy LiteLLM", url: "https://docs.litellm.ai/docs/" }],
       },
     ],
   },
@@ -409,7 +421,7 @@ const HELP_EN: Partial<Record<SettingsGroupKey, HelpDoc>> = {
   model: {
     steps: [
       {
-        text: "Pick the provider. OpenAI uses your platform.openai.com account directly; OpenRouter gives you hundreds of models from other providers behind a single key. Only the fields of the one you pick are shown.",
+        text: "Pick the provider. OpenAI uses your platform.openai.com account directly; OpenRouter gives you hundreds of models behind one key; LiteLLM connects to your OpenAI-compatible proxy. Only the fields of the one you pick are shown.",
       },
       {
         text: "OpenAI: go to platform.openai.com/api-keys, create a key and copy it (it is shown only once). The account needs credit loaded under Billing.",
@@ -435,6 +447,11 @@ const HELP_EN: Partial<Record<SettingsGroupKey, HelpDoc>> = {
       {
         text: "OpenRouter: the provider order is a comma-separated list of the providers you prefer. If none of them answers, the fallback criterion kicks in: price goes for the cheapest, throughput for the fastest and latency for the quickest to start.",
         links: [{ label: "Provider routing", url: "https://openrouter.ai/docs/features/provider-routing" }],
+      },
+      {
+        text: "LiteLLM: set your proxy base URL (including /v1), its master key and the model alias you configured in LiteLLM. If Reorganizo runs in Docker, localhost points to the Reorganizo container: use the LiteLLM service name.",
+        code: "http://litellm:4000/v1",
+        links: [{ label: "LiteLLM proxy documentation", url: "https://docs.litellm.ai/docs/" }],
       },
     ],
   },

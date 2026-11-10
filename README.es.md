@@ -161,10 +161,10 @@ terceros; si cambian el flujo de activación, seguí las instrucciones de su sit
    > web empiezan a contestar `invalid_grant` tanto en Calendar como en Tasks. Agregarte como
    > test user no lo evita.
 
-### 3. El LLM: OpenAI u OpenRouter
+### 3. El LLM: OpenAI, OpenRouter o LiteLLM
 
-Elegilo con `LLM_PROVIDER` (`openrouter` por defecto, u `openai`). Solo hace falta la key del
-proveedor activo.
+Elegilo con `LLM_PROVIDER` (`openrouter` por defecto). Solo hace falta la key del proveedor
+activo.
 
 **OpenAI**
 
@@ -182,6 +182,17 @@ proveedor activo.
    `deepseek/deepseek-v4-flash-0731`, pero **funciona cualquier modelo de OpenRouter**, solo
    cambiá `OPENROUTER_MODEL` (o elegilo desde la pantalla de configuración). El modelo tiene que
    soportar tool-calling.
+
+**LiteLLM**
+
+1. Iniciá un proxy de LiteLLM con al menos un alias de modelo que soporte tool-calling.
+2. Poné `LLM_PROVIDER=litellm`, `LITELLM_API_KEY` con la key del proxy,
+   `LITELLM_BASE_URL` con la URL base compatible con OpenAI (default
+   `http://localhost:4000/v1`) y `LITELLM_MODEL` con el alias configurado en el proxy. El alias
+   opcional `LITELLM_MODEL_STRONG` se usa cuando el agente escala a un modelo de refuerzo.
+3. Si Reorganizo corre en Docker, `localhost` apunta a su propio contenedor. Usá el hostname
+   accesible del servicio LiteLLM, por ejemplo `http://litellm:4000/v1`. Los pedidos usan Chat
+   Completions y mandan la key como `Authorization: Bearer`.
 
 ## Configuración
 
@@ -205,10 +216,13 @@ enruta tu contenedor o tu PaaS.
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Token de @BotFather |
 | `TELEGRAM_ALLOWED_USER_ID` | Tu user ID numérico — el bot ignora al resto |
-| `LLM_PROVIDER` | `openrouter` (default) u `openai` |
+| `LLM_PROVIDER` | `openrouter` (default), `openai` o `litellm` |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | Key y modelo de OpenAI (default `gpt-6-luna`) |
 | `OPENAI_MODEL_STRONG` | Igual que `OPENROUTER_MODEL_STRONG`, para OpenAI (ej. `gpt-6.1-sol`; vacío = nunca) |
 | `OPENAI_REASONING_EFFORT` | Razonamiento del modelo base: `none` (default), `low`, `medium`, `high`. `gpt-6.1-sol` y `gpt-6-astra` piden `low` o más. El de refuerzo siempre corre en `low` |
+| `LITELLM_API_KEY` | Key del proxy LiteLLM |
+| `LITELLM_BASE_URL` | URL base LiteLLM compatible con OpenAI (default `http://localhost:4000/v1`) |
+| `LITELLM_MODEL` / `LITELLM_MODEL_STRONG` | Alias base y alias de refuerzo opcional definidos en LiteLLM (default base `gpt-4o-mini`) |
 | `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` | LLM (default `deepseek/deepseek-v4-flash-0731`) |
 | `OPENROUTER_MODEL_STRONG` | Modelo mejor al que escala el agente cuando el barato se equivoca en un turno (vacío = nunca) |
 | `OPENROUTER_QUALITY_FLOOR` | Cuantización mínima del endpoint: `any`, `6bit`, `8bit` (default), `16bit` |

@@ -79,6 +79,9 @@ const MODEL_ADVANCED = [
   "OPENAI_MODEL",
   "OPENAI_MODEL_STRONG",
   "OPENAI_REASONING_EFFORT",
+  "LITELLM_BASE_URL",
+  "LITELLM_MODEL",
+  "LITELLM_MODEL_STRONG",
   "OPENROUTER_MODEL",
   "OPENROUTER_MODEL_STRONG",
   "OPENROUTER_QUALITY_FLOOR",
@@ -137,7 +140,7 @@ const codeStyle: React.CSSProperties = {
 
 function advancedInSettings(group: SettingsGroupKey, key: string): boolean {
   if (group === "telegram") return key !== "TELEGRAM_BOT_TOKEN";
-  if (group === "model") return !["LLM_PROVIDER", "OPENAI_API_KEY", "OPENROUTER_API_KEY"].includes(key);
+  if (group === "model") return !["LLM_PROVIDER", "OPENAI_API_KEY", "LITELLM_API_KEY", "OPENROUTER_API_KEY"].includes(key);
   if (group === "server") return key === "PORT" || key === "DATABASE_PATH";
   if (group === "preferences") return key === "BRIEFING_TIME";
   return false;
@@ -374,7 +377,9 @@ export default function SettingsView({
     } catch {
       setLlmResult({
         ok: false,
-        model: currentValue(provider === "openai" ? "OPENAI_MODEL" : "OPENROUTER_MODEL"),
+        model: currentValue(
+          provider === "openai" ? "OPENAI_MODEL" : provider === "litellm" ? "LITELLM_MODEL" : "OPENROUTER_MODEL",
+        ),
         error: t("setup.testRequestFailed"),
       });
     } finally {
@@ -490,7 +495,9 @@ export default function SettingsView({
                     : key === "LLM_PROVIDER"
                       ? option === "openai"
                         ? "OpenAI"
-                        : "OpenRouter"
+                        : option === "litellm"
+                          ? "LiteLLM"
+                          : "OpenRouter"
                       : option}
                 </option>
               ))}
