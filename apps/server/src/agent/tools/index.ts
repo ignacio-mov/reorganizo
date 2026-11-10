@@ -167,7 +167,7 @@ export const toolDefinitions = [
     function: {
       name: "create_task",
       description:
-        "Crea un to-do en Google Tasks. Para prioridad usá el campo notes con formato 'Prioridad: Alta|Media|Baja' en la primera línea, seguido de la descripción.",
+        "Crea un to-do en Google Tasks. Según TASK_CREATION_CONFIRMATION, se crea inmediatamente o queda pendiente en una tarjeta Confirmar/Cancelar. Para prioridad usá el campo notes con formato 'Prioridad: Alta|Media|Baja' en la primera línea, seguido de la descripción.",
       parameters: {
         type: "object",
         properties: {
@@ -345,12 +345,16 @@ const CALENDAR_WRITES = new Set(["create_event", "update_event", "delete_event"]
 
 /** Low-stakes and easy to undo: these run right away, no card needed. */
 const IMMEDIATE_TOOLS = new Set([
-  "create_task",
   "complete_task",
   "create_note",
   "update_note",
   "create_reminder",
 ]);
+
+function isImmediateTool(name: string): boolean {
+  if (name === "create_task") return config.TASK_CREATION_CONFIRMATION === "immediate";
+  return IMMEDIATE_TOOLS.has(name);
+}
 
 export interface ToolContext {
   /** true while running a batch the user already confirmed */
@@ -483,7 +487,7 @@ export async function executeTool(
   // them — exactly in the case where the model most needed catching.
   if (MUTATING_TOOLS.has(name) && !refused(result)) {
     (ctx.mutated ??= []).push(name);
-    if (ctx.confirmed || IMMEDIATE_TOOLS.has(name)) (ctx.executed ??= []).push(name);
+    if (ctx.confirmed || isImmediateTool(name)) (ctx.executed ??= []).push(name);
   }
   return result;
 }
@@ -622,6 +626,16 @@ async function runTool(
       return gtasks.listTasks(Boolean(args.show_completed));
 
     case "create_task":
+      if (!ctx.confirmed && config.TASK_CREATION_CONFIRMATION === "confirm") {
+        return stage(ctx, {
+          tool: "create_task",
+          args: {
+            title: String(args.title),
+            due_date: args.due_date ? String(args.due_date) : undefined,
+            notes: args.notes ? String(args.notes) : undefined,
+          },
+        });
+      }
       return gtasks.createTask(
         String(args.title),
         args.due_date ? String(args.due_date) : undefined,

@@ -295,6 +295,12 @@ export const SETTINGS_FIELDS: SettingsFieldDef[] = [
   { key: "WEB_PASSWORD", group: "web" },
   { key: "TIMEZONE", group: "preferences", kind: "datalist", options: COMMON_TIMEZONES },
   { key: "BRIEFING_TIME", group: "preferences", kind: "time" },
+  {
+    key: "TASK_CREATION_CONFIRMATION",
+    group: "preferences",
+    kind: "select",
+    options: ["immediate", "confirm"],
+  },
   { key: "LANGUAGE", group: "preferences", kind: "select", options: ["es", "en"] },
 ];
 

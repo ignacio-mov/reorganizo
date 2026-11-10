@@ -73,6 +73,7 @@ export const settingsSchema = z.object({
   // urgent reminders. Empty = no calls (message retries only).
   CALLMEBOT_USER: z.string().default(""),
   BRIEFING_TIME: z.string().regex(CLOCK_TIME).or(z.literal("")).default("07:30"),
+  TASK_CREATION_CONFIRMATION: z.enum(["immediate", "confirm"]).default("immediate"),
   DATABASE_PATH: z.string().default("./data/reorganizo.db"),
   // Language of every user-facing string (bot messages, briefing, agent replies).
   LANGUAGE: z.enum(["es", "en"]).default("es"),
@@ -140,6 +141,7 @@ export const looseSettingsSchema = z.object({
     .catch("America/Santiago"),
   CALLMEBOT_USER: z.string().default("").catch(""),
   BRIEFING_TIME: z.string().regex(CLOCK_TIME).or(z.literal("")).default("07:30").catch("07:30"),
+  TASK_CREATION_CONFIRMATION: z.enum(["immediate", "confirm"]).default("immediate").catch("immediate"),
   DATABASE_PATH: z.string().default("./data/reorganizo.db").catch("./data/reorganizo.db"),
   LANGUAGE: z.enum(["es", "en"]).default("es").catch("es"),
 });
@@ -255,6 +257,7 @@ export const SETTINGS_META: Record<Exclude<SettingKey, "WEB_SESSION_SECRET">, Se
   TIMEZONE: { group: "preferences", secret: false, envOnly: false },
   LANGUAGE: { group: "preferences", secret: false, envOnly: false },
   BRIEFING_TIME: { group: "preferences", secret: false, envOnly: false },
+  TASK_CREATION_CONFIRMATION: { group: "preferences", secret: false, envOnly: false },
 };
 
 /** Keys exposed to the UI, grouped-display order included. */

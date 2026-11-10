@@ -233,6 +233,7 @@ themselves live*, and `PORT`, which has to match the port your container or PaaS
 | `LANGUAGE` | `es` or `en` (default `es`) — language of the bot and the morning briefing. The web panel has its own ES/EN toggle |
 | `TIMEZONE` | Default `America/Santiago` |
 | `BRIEFING_TIME` | Morning briefing time, `HH:mm` (empty = disabled) |
+| `TASK_CREATION_CONFIRMATION` | `immediate` (default) or `confirm` — when enabled, creating a to-do shows a card before saving it |
 | `DATABASE_PATH` | **Environment only.** Default `/data/reorganizo.db` in Docker |
 
 ## Local development
@@ -310,8 +311,8 @@ Nothing reaches Google Calendar without you tapping a button:
 - On confirmation, an event identical to one already in the calendar is skipped instead of
   duplicated, and deleting something that is already gone is reported as such, not as an error.
 
-To-dos, notes and reminders are lower stakes and still run immediately; deleting them asks
-first, like calendar changes.
+By default, creating to-dos, notes and reminders runs immediately. In Settings, you can require
+Confirm/Cancel before creating to-dos; deleting them asks first, like calendar changes.
 
 ## Architecture
 

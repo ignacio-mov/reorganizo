@@ -233,6 +233,10 @@ const es = {
   "field.TIMEZONE.hint": "Resuelve “mañana”, “el martes” y las horas que dictás.",
   "field.BRIEFING_TIME.label": "Hora del briefing",
   "field.BRIEFING_TIME.hint": "Resumen diario por Telegram. Vacío lo desactiva.",
+  "field.TASK_CREATION_CONFIRMATION.label": "Confirmar tareas nuevas",
+  "field.TASK_CREATION_CONFIRMATION.hint": "Elige si el bot guarda los to-dos al instante o espera tu confirmación.",
+  "set.tasks.immediate": "Guardar inmediatamente",
+  "set.tasks.confirm": "Pedir confirmación",
   "field.LANGUAGE.label": "Idioma",
   "field.LANGUAGE.hint": "Idioma del bot y de esta web.",
 };
@@ -449,6 +453,10 @@ const en: Record<TKey, string> = {
   "field.TIMEZONE.hint": "Resolves “tomorrow”, “on Tuesday” and the times you dictate.",
   "field.BRIEFING_TIME.label": "Briefing time",
   "field.BRIEFING_TIME.hint": "Daily summary over Telegram. Empty disables it.",
+  "field.TASK_CREATION_CONFIRMATION.label": "Confirm new tasks",
+  "field.TASK_CREATION_CONFIRMATION.hint": "Choose whether the bot saves to-dos immediately or waits for your confirmation.",
+  "set.tasks.immediate": "Save immediately",
+  "set.tasks.confirm": "Require confirmation",
   "field.LANGUAGE.label": "Language",
   "field.LANGUAGE.hint": "Language for the bot and for this site.",
 };

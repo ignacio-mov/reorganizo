@@ -492,13 +492,15 @@ export default function SettingsView({
                 <option key={option} value={option}>
                   {key === "LANGUAGE"
                     ? t(option === "es" ? "set.lang.es" : "set.lang.en")
-                    : key === "LLM_PROVIDER"
-                      ? option === "openai"
-                        ? "OpenAI"
-                        : option === "litellm"
-                          ? "LiteLLM"
-                          : "OpenRouter"
-                      : option}
+                    : key === "TASK_CREATION_CONFIRMATION"
+                      ? t(option === "immediate" ? "set.tasks.immediate" : "set.tasks.confirm")
+                      : key === "LLM_PROVIDER"
+                        ? option === "openai"
+                          ? "OpenAI"
+                          : option === "litellm"
+                            ? "LiteLLM"
+                            : "OpenRouter"
+                        : option}
                 </option>
               ))}
             </select>

@@ -238,6 +238,7 @@ enruta tu contenedor o tu PaaS.
 | `LANGUAGE` | `es` o `en` (default `es`) — idioma del bot y del briefing matutino. La web tiene su propio toggle ES/EN |
 | `TIMEZONE` | Default `America/Santiago` |
 | `BRIEFING_TIME` | Hora del briefing matutino, `HH:mm` (vacío = desactivado) |
+| `TASK_CREATION_CONFIRMATION` | `immediate` (default) o `confirm` — requiere tarjeta antes de guardar cada to-do |
 | `DATABASE_PATH` | **Solo por entorno.** Default `/data/reorganizo.db` en Docker |
 
 ## Desarrollo local
@@ -317,8 +318,8 @@ Nada llega a Google Calendar sin que toques un botón:
 - Al confirmar, un evento idéntico a uno que ya está en el calendario se omite en vez de
   duplicarse, y borrar algo que ya no existe se informa como tal, no como error.
 
-To-dos, notas y recordatorios son de menor riesgo y siguen ejecutándose al toque; borrarlos sí
-pregunta antes, igual que el calendario.
+Por defecto, la creación de to-dos, notas y recordatorios se ejecuta al toque. En Ajustes puedes
+hacer que crear to-dos requiera Confirmar/Cancelar; borrar to-dos pregunta antes, igual que el calendario.
 
 ## Arquitectura
 
